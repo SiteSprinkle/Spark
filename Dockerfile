@@ -4,8 +4,8 @@ FROM golang:1.24.4-alpine
 # Set working directory
 WORKDIR /app
 
-# Install utilities to download and extract files (curl, tar, bash)
-RUN apk add --no-cache curl tar bash
+# Install utilities to download, extract files, and unzip (curl, tar, unzip, bash)
+RUN apk add --no-cache curl tar bash unzip
 
 # Download the Linux ARM64 executable from the GitHub release
 RUN curl -L -o server_linux_arm64.tar.gz https://github.com/XZB-1248/Spark/releases/download/v0.2.1/server_linux_arm64.tar.gz
@@ -13,8 +13,8 @@ RUN curl -L -o server_linux_arm64.tar.gz https://github.com/XZB-1248/Spark/relea
 # Verify the download (optional: check if the file exists and is not empty)
 RUN ls -lh server_linux_arm64.tar.gz && echo "File downloaded successfully"
 
-# Extract the downloaded tar file
-RUN tar -xvzf server_linux_arm64.tar.gz || { echo 'Extraction failed!'; exit 1; }
+# Unzip the .tar.gz and then extract it
+RUN gunzip -c server_linux_arm64.tar.gz | tar -xv -C /app
 
 # Expose the port for the app (change if needed)
 EXPOSE 8080
