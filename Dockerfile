@@ -1,38 +1,26 @@
-# Use a Python base image
-FROM python:3.8-slim
-
-# Set environment variable to prevent Python from writing .pyc files
-ENV PYTHONUNBUFFERED 1
-
-# Set the working directory inside the container
+# Use the official .NET Core SDK image to build the application
+FROM mcr.microsoft.com/dotnet/aspnet:6.0 AS base
 WORKDIR /app
+EXPOSE 80
 
-# Install system dependencies needed for building packages (if needed)
-RUN apt-get update && apt-get install -y \
-    git \
-    curl \
-    libssl-dev \
-    libffi-dev \
-    build-essential \
-    && rm -rf /var/lib/apt/lists/*
+# Install .NET SDK for building the application
+FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
+WORKDIR /src
 
-# Clone the XenoRAT repository into the container
-RUN git clone https://github.com/moom825/xeno-rat.git /app
+# Copy the .csproj and restore dependencies
+COPY ["xeno rat server/xeno rat server.csproj", "xeno rat server/"]
+RUN dotnet restore "xeno rat server/xeno rat server.csproj"
 
-# Change working directory to the XenoRAT directory
+# Copy the rest of the code and build the app
+COPY . .
+WORKDIR "/src/xeno rat server"
+RUN dotnet build "xeno rat server.csproj" -c Release -o /app/build
+
+# Publish the app to the /app/publish directory
+RUN dotnet publish "xeno rat server.csproj" -c Release -o /app/publish
+
+# Set the entry point for running the app
+FROM base AS final
 WORKDIR /app
-
-# Install additional libraries to parse imports and install dependencies
-RUN pip install pipreqs
-
-# Use pipreqs to generate requirements automatically from the repository's imports
-RUN pipreqs . --force
-
-# Install the dependencies from the generated requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Expose the port the RAT will use (Change this if the RAT uses a different port)
-EXPOSE 8080
-
-# Run XenoRAT on startup (Make sure to adjust this according to the main script)
-CMD ["python", "main.py"]
+COPY --from=build /app/publish .
+ENTRYPOINT ["dotnet", "xeno rat server.dll"]
