@@ -1,53 +1,53 @@
-# Stage 1: Build front-end (Node.js environment)
+# Stage 1: Build front-end using Node.js
 FROM node:18 AS frontend
 
-# Set working directory
+# Set working directory for the front-end
 WORKDIR /app/web
 
-# Copy front-end files
+# Copy front-end package files
 COPY ./web/package.json ./web/package-lock.json ./
-RUN npm install
 
-# Stage 2: Build Go server (Go environment)
+# Install dependencies and suppress unnecessary logs
+RUN npm install --silent
+
+# Build front-end and suppress unnecessary logs
+RUN npm run build-prod --silent
+
+# Stage 2: Build Go back-end (including Node.js for the front-end build)
 FROM golang:1.24.4 AS backend
 
-# Install Node.js (because it's missing in the Go image)
+# Install Node.js in Go container
 RUN apt-get update && \
     apt-get install -y nodejs npm
 
-# Set working directory for the backend
+# Set working directory for Go back-end
 WORKDIR /app
 
-# Copy Go files
+# Copy the entire project
 COPY . .
 
-# Step 1: Build front-end (using Node.js)
-RUN cd web && npm run build-prod
-
-# Step 2: Embed static resources into Go app
+# Embed front-end into the Go app (using statik) with error logs only
 RUN go install github.com/rakyll/statik && \
     statik -m -src="./web/dist" -f -dest="./server/embed" -p web -ns web
 
-# Step 3: Build Go client
+# Build Go client and back-end, showing errors only
 RUN mkdir -p ./built && \
     go mod tidy && \
     go mod download && \
-    ./scripts/build.client.sh
-
-# Step 4: Build Go server
-RUN mkdir -p ./releases && \
+    ./scripts/build.client.sh && \
+    mkdir -p ./releases && \
     go build -tags netgo -ldflags '-s -w' -o app && \
     ./scripts/build.server.sh
 
-# Final stage: Prepare app to run
+# Final Stage: Prepare the app to run
 FROM golang:1.24.4
 
 WORKDIR /app
 
-# Copy the final Go binary
+# Copy the final Go binary from the build stage
 COPY --from=backend /app/app .
 
-# Expose the app's port
+# Expose the app's port (usually 8080 for Go servers)
 EXPOSE 8080
 
 # Run the Go app
