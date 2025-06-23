@@ -13,6 +13,9 @@ RUN npm install --silent || { echo 'npm install failed!'; exit 1; }
 # Build front-end silently, only show errors
 RUN npm run build-prod --silent || { echo 'npm run build-prod failed!'; exit 1; }
 
+# Debug: List the files in the /web directory to verify if ./dist is created
+RUN ls -la ./web
+
 # Stage 2: Build Go back-end (including Node.js for the front-end build)
 FROM golang:1.24.4 AS backend
 
@@ -24,6 +27,9 @@ WORKDIR /app
 
 # Copy the entire project
 COPY . .
+
+# Check if the dist directory exists and output an error if not
+RUN if [ ! -d "./web/dist" ]; then echo "Error: ./web/dist directory not found!"; exit 1; fi
 
 # Embed front-end into the Go app (using statik) with error output only
 RUN go install github.com/rakyll/statik || { echo 'statik installation failed!'; exit 1; }
