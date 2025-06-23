@@ -1,29 +1,21 @@
-# Stage 1: Build Go back-end (without front-end build)
-FROM golang:1.24.4 AS backend
+# Use a Windows Server Core base image
+FROM mcr.microsoft.com/windows/servercore:ltsc2019
 
-# Set working directory for Go back-end
+# Set working directory
 WORKDIR /app
 
-# Copy the entire project
-COPY . .
+# Install utilities to download and extract the file (powershell)
+RUN powershell -Command \
+    Set-ExecutionPolicy Unrestricted -Scope Process -Force; \
+    Invoke-WebRequest -Uri https://github.com/SiteSprinkle/Spark/releases/download/v0.2.1/server_windows_amd64.zip -OutFile server_windows_amd64.zip
 
-# Check that Go dependencies are in place
-RUN go mod tidy && go mod download
+# Extract the downloaded zip file
+RUN powershell -Command \
+    Expand-Archive -Path server_windows_amd64.zip -DestinationPath .; \
+    Remove-Item server_windows_amd64.zip
 
-# Build Go server and put it in releases folder
-RUN mkdir -p ./releases && go build -tags netgo -ldflags '-s -w' -o ./releases/app
-
-# Final Stage: Run the server executable from releases
-FROM golang:1.24.4
-
-# Set working directory for running the server
-WORKDIR /app
-
-# Copy the built executable from the backend stage
-COPY --from=backend /app/releases/app .
-
-# Expose the app's port (usually 8080 for Go servers)
+# Expose the port for the app (change if needed)
 EXPOSE 8080
 
-# Run the Go server executable directly
-CMD ["./app"]
+# Run the Windows executable (assuming it's server.exe inside the zip)
+CMD ["./server.exe"]
