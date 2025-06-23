@@ -18,11 +18,14 @@ WORKDIR /app
 # Download the server tarball
 RUN curl -L -o server_linux_arm64.tar.gz https://github.com/XZB-1248/Spark/releases/download/v0.2.1/server_linux_arm64.tar.gz
 
-# Verify that the file was downloaded
+# Check the file type (optional, for debugging)
+RUN file server_linux_arm64.tar.gz
+
+# Verify the file size
 RUN ls -lh server_linux_arm64.tar.gz
 
 # Extract the tarball
-RUN tar -xzvf server_linux_arm64.tar.gz
+RUN tar -xzvf server_linux_arm64.tar.gz || { echo 'Extraction failed!'; exit 1; }
 
 # Expose the necessary port (adjust if needed)
 EXPOSE 8080
