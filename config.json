@@ -1,0 +1,12 @@
+{
+    "listen": "192.168.56.1:12345",
+    "salt": "g7px2q9rk8yz1bvwm3cn4tl", 
+    "auth": {
+        "Aakesh": "$SHA256$73b5d10aa1172e0326f6a64661bf2ee7d1cfe22cc1d956809d2fe93b11d16afa"
+    },
+    "log": {
+        "level": "info",
+        "path": "./logs",
+        "days": 7
+    }
+}
